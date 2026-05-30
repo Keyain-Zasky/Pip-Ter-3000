@@ -86,13 +86,11 @@ function createWindow() {
     }
   });
 
-  // During development, load the Vite server
-  if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
-    mainWindow.loadURL('http://localhost:5173');
-    // Open devtools in development (disabled for production prep / GitHub release)
-    // mainWindow.webContents.openDevTools({ mode: 'detach' });
-  } else {
+  // Load built files if in production or packaged; otherwise load Vite dev server
+  if (process.env.NODE_ENV === 'production' || app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  } else {
+    mainWindow.loadURL('http://localhost:5173');
   }
 
   mainWindow.once('ready-to-show', () => {
