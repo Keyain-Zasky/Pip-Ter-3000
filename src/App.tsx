@@ -595,9 +595,9 @@ export default function App() {
     <div className="app-container">
       {/* Titlebar window headers */}
       <div className="titlebar">
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', WebkitAppRegion: 'no-drag' } as any}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <span className="window-title">Pip-Ter 3000</span>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '6px', WebkitAppRegion: 'no-drag' } as any}>
             <button 
               className={`close-drawer-btn ${isSessionsOpen ? 'active' : ''}`}
               style={{ 
@@ -655,7 +655,7 @@ export default function App() {
         </div>
 
         {/* Tab Headers Row */}
-        <div style={{ display: 'flex', flex: 1, marginLeft: '20px', gap: '4px', overflowX: 'auto', WebkitAppRegion: 'no-drag' } as any}>
+        <div style={{ display: 'flex', flex: 1, marginLeft: '20px', gap: '4px', overflowX: 'auto' }}>
           {tabs.map(t => (
             <div 
               key={t.id} 
@@ -710,8 +710,9 @@ export default function App() {
                     padding: '2px 4px',
                     width: '100px',
                     borderRadius: '2px',
-                    outline: 'none'
-                  }}
+                    outline: 'none',
+                    WebkitAppRegion: 'no-drag'
+                  } as any}
                 />
               ) : (
                 <span>{t.name}</span>
@@ -721,7 +722,7 @@ export default function App() {
                   e.stopPropagation();
                   closeTab(t.id);
                 }}
-                style={{ cursor: 'pointer', opacity: 0.7, padding: '0 2px' }}
+                style={{ cursor: 'pointer', opacity: 0.7, padding: '0 2px', WebkitAppRegion: 'no-drag' } as any}
               >
                 ✕
               </span>
@@ -735,8 +736,9 @@ export default function App() {
               color: 'var(--fg-color)',
               borderRadius: '4px 4px 0 0',
               padding: '2px 8px',
-              cursor: 'pointer'
-            }}
+              cursor: 'pointer',
+              WebkitAppRegion: 'no-drag'
+            } as any}
           >
             +
           </button>
