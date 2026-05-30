@@ -35,6 +35,7 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Form State
   const [name, setName] = useState('');
@@ -63,8 +64,19 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
 
   if (!isOpen) return null;
 
+  const filteredSessions = sessions.filter(s => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      (s.name || '').toLowerCase().includes(query) ||
+      (s.group || '').toLowerCase().includes(query) ||
+      (s.host || '').toLowerCase().includes(query) ||
+      (s.shell || '').toLowerCase().includes(query)
+    );
+  });
+
   // Group the sessions
-  const groups = sessions.reduce<Record<string, SavedSession[]>>((acc, s) => {
+  const groups = filteredSessions.reduce<Record<string, SavedSession[]>>((acc, s) => {
     const g = s.group || 'General';
     if (!acc[g]) acc[g] = [];
     acc[g].push(s);
@@ -240,26 +252,65 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <button 
             className="close-drawer-btn" 
-            style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
+            style={{ width: '100%', padding: '8px', marginBottom: '12px' }}
             onClick={() => setIsAdding(true)}
           >
             + Add New Session
           </button>
 
+          <div style={{ marginBottom: '16px', position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search connections..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="setting-input"
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                fontFamily: 'inherit',
+                fontSize: '0.85rem',
+                paddingLeft: '28px'
+              }}
+            />
+            <svg 
+              width="14" 
+              height="14" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              style={{
+                position: 'absolute',
+                left: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                opacity: 0.5
+              }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {Object.keys(groups).length === 0 ? (
-              <div style={{ opacity: 0.5, textAlign: 'center', marginTop: '20px' }}>No saved sessions yet.</div>
+              <div style={{ opacity: 0.5, textAlign: 'center', marginTop: '20px' }}>No matching sessions found.</div>
             ) : (
-              Object.entries(groups).map(([groupName, items]) => (
-                <div key={groupName} className="session-group">
-                  <div className="group-header" onClick={() => toggleGroup(groupName)}>
-                    <span style={{ fontSize: '0.7rem', marginRight: '4px' }}>{collapsedGroups[groupName] ? '►' : '▼'}</span>
-                    <span style={{ fontWeight: 'bold' }}>{groupName}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.75rem', opacity: 0.6 }}>({items.length})</span>
-                  </div>
+              Object.entries(groups).map(([groupName, items]) => {
+                const isCollapsed = collapsedGroups[groupName] && searchQuery.trim().length === 0;
+                return (
+                  <div key={groupName} className="session-group">
+                    <div className="group-header" onClick={() => toggleGroup(groupName)}>
+                      <span style={{ fontSize: '0.7rem', marginRight: '4px' }}>{isCollapsed ? '►' : '▼'}</span>
+                      <span style={{ fontWeight: 'bold' }}>{groupName}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: '0.75rem', opacity: 0.6 }}>({items.length})</span>
+                    </div>
 
-                  {!collapsedGroups[groupName] && (
-                    <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
+                    {!isCollapsed && (
+                      <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
                       {items.map((item) => (
                         <div key={item.id} className="session-item" onClick={() => onSelectSession(item)}>
                           <div className="session-info">
@@ -282,7 +333,8 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
                     </div>
                   )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

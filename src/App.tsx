@@ -33,14 +33,28 @@ interface Settings {
   ansiGreen: string;
   ansiYellow: string;
   ansiCyan: string;
+  hotkeys?: {
+    newTab: string;
+    closeTab: string;
+    nextTab: string;
+    prevTab: string;
+    splitVertical: string;
+    splitHorizontal: string;
+  };
+}
+
+interface Pane {
+  id: string;
+  shell: string;
+  args: string[];
+  env?: Record<string, string>;
 }
 
 interface Tab {
   id: string;
   name: string;
-  shell: string;
-  args: string[];
-  env?: Record<string, string>;
+  splitType: 'vertical' | 'horizontal' | null;
+  panes: Pane[];
 }
 
 // Extends Window to host sound synthesizers
@@ -49,6 +63,35 @@ declare global {
     playKeystrokeSound?: () => void;
   }
 }
+
+const DEFAULT_HOTKEYS = {
+  newTab: 'Ctrl+Shift+T',
+  closeTab: 'Ctrl+Shift+W',
+  nextTab: 'Ctrl+Tab',
+  prevTab: 'Ctrl+Shift+Tab',
+  splitVertical: 'Ctrl+Shift+E',
+  splitHorizontal: 'Ctrl+Shift+O'
+};
+
+const getEventKeyCombo = (e: KeyboardEvent) => {
+  const parts = [];
+  if (e.ctrlKey) parts.push('Ctrl');
+  if (e.metaKey) parts.push('Meta');
+  if (e.altKey) parts.push('Alt');
+  if (e.shiftKey) parts.push('Shift');
+  
+  const key = e.key.toUpperCase();
+  if (key !== 'CONTROL' && key !== 'SHIFT' && key !== 'ALT' && key !== 'META') {
+    if (e.code.startsWith('Key')) {
+      parts.push(e.code.replace('Key', ''));
+    } else if (e.code === 'Tab') {
+      parts.push('Tab');
+    } else {
+      parts.push(e.key);
+    }
+  }
+  return parts.join('+');
+};
 
 export default function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
@@ -67,70 +110,7 @@ export default function App() {
     activeTabIdRef.current = activeTabId;
   }, [tabs, activeTabId]);
 
-  // Global custom event listeners for tab shortcuts
-  useEffect(() => {
-    const onNewTab = () => {
-      addTab('/bin/bash', [], 'Bash');
-    };
 
-    const onCloseTab = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const targetId = customEvent.detail?.id || activeTabIdRef.current;
-      if (targetId) {
-        closeTab(targetId);
-      }
-    };
-
-    const onNextTab = () => {
-      const currentTabs = tabsRef.current;
-      if (currentTabs.length <= 1) return;
-      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
-      const nextIdx = (idx + 1) % currentTabs.length;
-      setActiveTabId(currentTabs[nextIdx].id);
-    };
-
-    const onPrevTab = () => {
-      const currentTabs = tabsRef.current;
-      if (currentTabs.length <= 1) return;
-      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
-      const prevIdx = (idx - 1 + currentTabs.length) % currentTabs.length;
-      setActiveTabId(currentTabs[prevIdx].id);
-    };
-
-    window.addEventListener('app:new-tab', onNewTab);
-    window.addEventListener('app:close-tab', onCloseTab);
-    window.addEventListener('app:next-tab', onNextTab);
-    window.addEventListener('app:prev-tab', onPrevTab);
-
-    // Also handle keys globally if xterm isn't focused
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
-        e.preventDefault();
-        onNewTab();
-      }
-      if (e.ctrlKey && e.shiftKey && e.code === 'KeyW') {
-        e.preventDefault();
-        onCloseTab(new CustomEvent('app:close-tab'));
-      }
-      if (e.ctrlKey && !e.shiftKey && e.code === 'Tab') {
-        e.preventDefault();
-        onNextTab();
-      }
-      if (e.ctrlKey && e.shiftKey && e.code === 'Tab') {
-        e.preventDefault();
-        onPrevTab();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('app:new-tab', onNewTab);
-      window.removeEventListener('app:close-tab', onCloseTab);
-      window.removeEventListener('app:next-tab', onNextTab);
-      window.removeEventListener('app:prev-tab', onPrevTab);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
 
 
@@ -162,7 +142,8 @@ export default function App() {
     ansiRed: '#ff3333',
     ansiGreen: '#33ff33',
     ansiYellow: '#ffff33',
-    ansiCyan: '#33ffff'
+    ansiCyan: '#33ffff',
+    hotkeys: DEFAULT_HOTKEYS
   });
 
   const [savedSessions, setSavedSessions] = useState<SavedSession[]>([]);
@@ -349,11 +330,18 @@ export default function App() {
   }, [settings.soundEnabled, settings.keystrokeSound]);
 
   const addTab = (shell: string, args: string[], name: string, env?: Record<string, string>) => {
-    const id = `tab-${Math.random().toString(36).substr(2, 9)}`;
-    const newTab = { id, name, shell, args, env };
+    const tabId = `tab-${Math.random().toString(36).substr(2, 9)}`;
+    const paneId = `pane-${Math.random().toString(36).substr(2, 9)}`;
+    const newTab: Tab = {
+      id: tabId,
+      name,
+      splitType: null,
+      panes: [{ id: paneId, shell, args, env }]
+    };
     setTabs(prev => [...prev, newTab]);
-    setActiveTabId(id);
+    setActiveTabId(tabId);
   };
+
   const closeTab = (id: string) => {
     setTabs(prev => {
       const idx = prev.findIndex(t => t.id === id);
@@ -372,6 +360,52 @@ export default function App() {
       }
       return updated;
     });
+  };
+
+  const closePane = (tabId: string, paneId: string) => {
+    setTabs(prev => {
+      const updated = prev.map(t => {
+        if (t.id !== tabId) return t;
+        const filteredPanes = t.panes.filter(p => p.id !== paneId);
+        return {
+          ...t,
+          splitType: filteredPanes.length <= 1 ? null : t.splitType,
+          panes: filteredPanes
+        };
+      }).filter(t => t.panes.length > 0);
+
+      const stillExists = updated.some(t => t.id === activeTabId);
+      if (!stillExists) {
+        if (updated.length > 0) {
+          setActiveTabId(updated[updated.length - 1].id);
+        } else {
+          setActiveTabId('');
+        }
+      }
+      return updated;
+    });
+  };
+
+  const splitActiveTab = (direction: 'vertical' | 'horizontal') => {
+    setTabs(prev => prev.map(t => {
+      if (t.id !== activeTabId) return t;
+      if (t.panes.length >= 2) {
+        return t; // Max 2 split panes per tab for visual sizing layouts
+      }
+      const newPaneId = `pane-${Math.random().toString(36).substr(2, 9)}`;
+      const currentPane = t.panes[t.panes.length - 1];
+      const newPane = {
+        id: newPaneId,
+        shell: currentPane?.shell || '/bin/bash',
+        args: currentPane?.args || [],
+        env: currentPane?.env
+      };
+      return {
+        ...t,
+        splitType: direction,
+        panes: [...t.panes, newPane]
+      };
+    }));
   };
 
   const openSessionTab = (session: SavedSession) => {
@@ -543,6 +577,77 @@ export default function App() {
     };
   }, [settings.fontSize]);
 
+  // Global custom event listeners for tab and split shortcuts
+  useEffect(() => {
+    const onNewTab = () => {
+      addTab('/bin/bash', [], 'Bash');
+    };
+
+    const onCloseTab = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const targetId = customEvent.detail?.id || activeTabIdRef.current;
+      if (targetId) {
+        closeTab(targetId);
+      }
+    };
+
+    const onNextTab = () => {
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length <= 1) return;
+      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
+      const nextIdx = (idx + 1) % currentTabs.length;
+      setActiveTabId(currentTabs[nextIdx].id);
+    };
+
+    const onPrevTab = () => {
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length <= 1) return;
+      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
+      const prevIdx = (idx - 1 + currentTabs.length) % currentTabs.length;
+      setActiveTabId(currentTabs[prevIdx].id);
+    };
+
+    window.addEventListener('app:new-tab', onNewTab);
+    window.addEventListener('app:close-tab', onCloseTab);
+    window.addEventListener('app:next-tab', onNextTab);
+    window.addEventListener('app:prev-tab', onPrevTab);
+
+    // Also handle keys globally if xterm isn't focused
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const currentHotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
+      const combo = getEventKeyCombo(e);
+
+      if (combo === currentHotkeys.newTab) {
+        e.preventDefault();
+        onNewTab();
+      } else if (combo === currentHotkeys.closeTab) {
+        e.preventDefault();
+        onCloseTab(new CustomEvent('app:close-tab'));
+      } else if (combo === currentHotkeys.nextTab) {
+        e.preventDefault();
+        onNextTab();
+      } else if (combo === currentHotkeys.prevTab) {
+        e.preventDefault();
+        onPrevTab();
+      } else if (combo === currentHotkeys.splitVertical) {
+        e.preventDefault();
+        splitActiveTab('vertical');
+      } else if (combo === currentHotkeys.splitHorizontal) {
+        e.preventDefault();
+        splitActiveTab('horizontal');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('app:new-tab', onNewTab);
+      window.removeEventListener('app:close-tab', onCloseTab);
+      window.removeEventListener('app:next-tab', onNextTab);
+      window.removeEventListener('app:prev-tab', onPrevTab);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [settings.hotkeys]);
+
   const handleExportSettings = async () => {
     try {
       const success = await (window as any).api.config.export({ settings, savedSessions });
@@ -665,6 +770,58 @@ export default function App() {
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
+            {tabs.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', marginLeft: '6px', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '8px' }}>
+                <button 
+                  className="close-drawer-btn" 
+                  style={{ 
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    boxSizing: 'border-box',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--fg-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => splitActiveTab('vertical')}
+                  title="Split Vertically"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="12" y1="3" x2="12" y2="21" />
+                  </svg>
+                </button>
+                <button 
+                  className="close-drawer-btn" 
+                  style={{ 
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    boxSizing: 'border-box',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--fg-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => splitActiveTab('horizontal')}
+                  title="Split Horizontally"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -824,29 +981,46 @@ export default function App() {
           {settings.scanlineIntensity > 0 && <div className="scanlines scanlines-moving" />}
           <div className="static-noise" />
 
-          {/* Render terminals tabs */}
-          {tabs.map(t => (
-            <TerminalTab
-              key={t.id}
-              id={t.id}
-              active={t.id === activeTabId}
-              sessionConfig={{ shell: t.shell, args: t.args }}
-              settings={{
-                theme: settings.theme,
-                fontFamily: settings.fontFamily,
-                fontSize: settings.fontSize,
-                glowIntensity: settings.glowIntensity,
-                foreground: settings.foreground,
-                background: settings.background,
-                cursor: settings.cursor,
-                ansiRed: settings.ansiRed,
-                ansiGreen: settings.ansiGreen,
-                ansiYellow: settings.ansiYellow,
-                ansiCyan: settings.ansiCyan
-              }}
-              onClose={() => closeTab(t.id)}
-            />
-          ))}
+          {/* Render terminals tabs and their split panes */}
+          {tabs.map(t => {
+            const isTabActive = t.id === activeTabId;
+            return (
+              <div 
+                key={t.id}
+                style={{
+                  display: isTabActive ? 'flex' : 'none',
+                  flexDirection: t.splitType === 'horizontal' ? 'column' : 'row',
+                  width: '100%',
+                  height: '100%',
+                  gap: '8px'
+                }}
+              >
+                {t.panes.map(p => (
+                  <div key={p.id} style={{ flex: 1, height: '100%', width: '100%', position: 'relative' }}>
+                    <TerminalTab
+                      id={p.id}
+                      active={isTabActive}
+                      sessionConfig={{ shell: p.shell, args: p.args, env: p.env }}
+                      settings={{
+                        theme: settings.theme,
+                        fontFamily: settings.fontFamily,
+                        fontSize: settings.fontSize,
+                        glowIntensity: settings.glowIntensity,
+                        foreground: settings.foreground,
+                        background: settings.background,
+                        cursor: settings.cursor,
+                        ansiRed: settings.ansiRed,
+                        ansiGreen: settings.ansiGreen,
+                        ansiYellow: settings.ansiYellow,
+                        ansiCyan: settings.ansiCyan
+                      }}
+                      onClose={() => closePane(t.id, p.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            );
+          })}
 
           {tabs.length === 0 && (
             <div style={{

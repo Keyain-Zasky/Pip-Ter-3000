@@ -8,14 +8,34 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "electron": "electron .",
-    "start": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\""
+    "start": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
+    "package": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.pipter3000.app",
+    "productName": "Pip-Ter 3000",
+    "directories": {
+      "output": "dist-package"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "System;TerminalEmulator"
+    }
   },
   "dependencies": {
+    "node-pty": "^1.1.0-beta21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "xterm": "^5.3.0",
-    "xterm-addon-fit": "^0.8.0",
-    "node-pty": "^1.1.0-beta21"
+    "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
@@ -23,6 +43,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "concurrently": "^8.2.2",
     "electron": "^30.0.9",
+    "electron-builder": "^26.8.1",
     "typescript": "^5.2.2",
     "vite": "^5.3.1",
     "wait-on": "^7.2.0"

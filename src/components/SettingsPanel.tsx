@@ -29,6 +29,14 @@ interface Settings {
   ansiGreen: string;
   ansiYellow: string;
   ansiCyan: string;
+  hotkeys?: {
+    newTab: string;
+    closeTab: string;
+    nextTab: string;
+    prevTab: string;
+    splitVertical: string;
+    splitHorizontal: string;
+  };
 }
 
 interface SettingsPanelProps {
@@ -40,6 +48,35 @@ interface SettingsPanelProps {
   onImportSettings: () => void;
 }
 
+const DEFAULT_HOTKEYS = {
+  newTab: 'Ctrl+Shift+T',
+  closeTab: 'Ctrl+Shift+W',
+  nextTab: 'Ctrl+Tab',
+  prevTab: 'Ctrl+Shift+Tab',
+  splitVertical: 'Ctrl+Shift+E',
+  splitHorizontal: 'Ctrl+Shift+O'
+};
+
+const getEventKeyCombo = (e: KeyboardEvent) => {
+  const parts = [];
+  if (e.ctrlKey) parts.push('Ctrl');
+  if (e.metaKey) parts.push('Meta');
+  if (e.altKey) parts.push('Alt');
+  if (e.shiftKey) parts.push('Shift');
+  
+  const key = e.key.toUpperCase();
+  if (key !== 'CONTROL' && key !== 'SHIFT' && key !== 'ALT' && key !== 'META') {
+    if (e.code.startsWith('Key')) {
+      parts.push(e.code.replace('Key', ''));
+    } else if (e.code === 'Tab') {
+      parts.push('Tab');
+    } else {
+      parts.push(e.key);
+    }
+  }
+  return parts.join('+');
+};
+
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   settings,
   onUpdateSettings,
@@ -48,6 +85,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onExportSettings,
   onImportSettings
 }) => {
+  const [listeningKey, setListeningKey] = React.useState<string | null>(null);
+
+  const startListening = (hotkeyKey: string) => {
+    setListeningKey(hotkeyKey);
+  };
+
+  React.useEffect(() => {
+    if (!listeningKey) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const combo = getEventKeyCombo(e);
+      if (combo) {
+        const finalHotkeys = {
+          ...(settings.hotkeys || DEFAULT_HOTKEYS),
+          [listeningKey]: combo
+        };
+        onUpdateSettings({ hotkeys: finalHotkeys });
+        setListeningKey(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [listeningKey, settings.hotkeys]);
+
   if (!isOpen) return null;
 
   const fontOptions = [
@@ -498,6 +565,32 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             onChange={(e) => onUpdateSettings({ ansiCyan: e.target.value })}
           />
         </div>
+      </div>
+
+      <div style={{ borderTop: '1px solid var(--border-color)', margin: '18px 0' }} />
+
+      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Custom Hotkeys</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {Object.entries(settings.hotkeys || DEFAULT_HOTKEYS).map(([key, combo]) => (
+          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+            <span style={{ textTransform: 'capitalize' }}>
+              {key.replace(/([A-Z])/g, ' $1').trim()}
+            </span>
+            <button
+              className="close-drawer-btn"
+              style={{
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                background: listeningKey === key ? 'var(--fg-color)' : 'transparent',
+                color: listeningKey === key ? 'var(--bg-color)' : 'var(--fg-color)',
+                cursor: 'pointer'
+              }}
+              onClick={() => startListening(key)}
+            >
+              {listeningKey === key ? 'Press keys...' : combo}
+            </button>
+          </div>
+        ))}
       </div>
 
       <div style={{ borderTop: '1px solid var(--border-color)', margin: '18px 0' }} />

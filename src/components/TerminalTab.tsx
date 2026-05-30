@@ -242,33 +242,21 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
                 if (selection) {
                   navigator.clipboard.writeText(selection);
                 }
-                return false; // Prevent sending Ctrl+C (SIGINT) to PTY
+                return false; // Prevent sending to PTY
               }
               // Ctrl+Shift+V (Paste Clipboard text)
               if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyV' && arg.type === 'keydown') {
                 navigator.clipboard.readText().then((text) => {
                   window.api.pty.write(ptyId, text);
                 });
-                return false; // Prevent sending raw Ctrl+V code to PTY
-              }
-              // Ctrl+Shift+T (New Tab Shortcut)
-              if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyT' && arg.type === 'keydown') {
-                window.dispatchEvent(new CustomEvent('app:new-tab'));
                 return false;
               }
-              // Ctrl+Shift+W (Close Tab Shortcut)
-              if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyW' && arg.type === 'keydown') {
-                window.dispatchEvent(new CustomEvent('app:close-tab', { detail: { id } }));
-                return false;
-              }
-              // Ctrl+Tab (Next Tab Shortcut)
-              if (arg.ctrlKey && !arg.shiftKey && arg.code === 'Tab' && arg.type === 'keydown') {
-                window.dispatchEvent(new CustomEvent('app:next-tab'));
-                return false;
-              }
-              // Ctrl+Shift+Tab (Prev Tab Shortcut)
-              if (arg.ctrlKey && arg.shiftKey && arg.code === 'Tab' && arg.type === 'keydown') {
-                window.dispatchEvent(new CustomEvent('app:prev-tab'));
+              // Let global hotkeys (Ctrl+Shift+T, Ctrl+Tab, splits, etc.) bypass xterm to bubble up
+              if (arg.ctrlKey && arg.type === 'keydown') {
+                // Keep Ctrl+C (SIGINT) passing to terminal shell PTY
+                if (arg.code === 'KeyC' && !arg.shiftKey) {
+                  return true;
+                }
                 return false;
               }
               return true;
