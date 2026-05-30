@@ -238,6 +238,24 @@ ipcMain.on('window:close', () => {
   if (mainWindow) mainWindow.close();
 });
 
+// System shells detection IPC
+ipcMain.handle('system:shells', () => {
+  try {
+    const file = '/etc/shells';
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, 'utf8');
+      return content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
+    }
+  } catch (e) {
+    console.error('Failed reading /etc/shells', e);
+  }
+  // Fallback common shells
+  return ['/bin/bash', '/bin/sh'];
+});
+
 // Config IPC
 ipcMain.handle('config:load', () => {
   return loadConfig();

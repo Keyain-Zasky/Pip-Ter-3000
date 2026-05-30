@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('api', {
     export: (configData) => ipcRenderer.invoke('config:export', configData),
     import: () => ipcRenderer.invoke('config:import')
   },
+  system: {
+    getShells: () => ipcRenderer.invoke('system:shells')
+  },
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),

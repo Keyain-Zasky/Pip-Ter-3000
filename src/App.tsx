@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TerminalTab } from './components/TerminalTab';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SavedSessionsPanel, SavedSession } from './components/SavedSessionsPanel';
@@ -55,6 +55,82 @@ export default function App() {
   const [activeTabId, setActiveTabId] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSessionsOpen, setIsSessionsOpen] = useState(false);
+
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>('');
+
+  const tabsRef = useRef(tabs);
+  const activeTabIdRef = useRef(activeTabId);
+
+  useEffect(() => {
+    tabsRef.current = tabs;
+    activeTabIdRef.current = activeTabId;
+  }, [tabs, activeTabId]);
+
+  // Global custom event listeners for tab shortcuts
+  useEffect(() => {
+    const onNewTab = () => {
+      addTab('/bin/bash', [], 'Bash');
+    };
+
+    const onCloseTab = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const targetId = customEvent.detail?.id || activeTabIdRef.current;
+      if (targetId) {
+        closeTab(targetId);
+      }
+    };
+
+    const onNextTab = () => {
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length <= 1) return;
+      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
+      const nextIdx = (idx + 1) % currentTabs.length;
+      setActiveTabId(currentTabs[nextIdx].id);
+    };
+
+    const onPrevTab = () => {
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length <= 1) return;
+      const idx = currentTabs.findIndex(t => t.id === activeTabIdRef.current);
+      const prevIdx = (idx - 1 + currentTabs.length) % currentTabs.length;
+      setActiveTabId(currentTabs[prevIdx].id);
+    };
+
+    window.addEventListener('app:new-tab', onNewTab);
+    window.addEventListener('app:close-tab', onCloseTab);
+    window.addEventListener('app:next-tab', onNextTab);
+    window.addEventListener('app:prev-tab', onPrevTab);
+
+    // Also handle keys globally if xterm isn't focused
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
+        e.preventDefault();
+        onNewTab();
+      }
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyW') {
+        e.preventDefault();
+        onCloseTab(new CustomEvent('app:close-tab'));
+      }
+      if (e.ctrlKey && !e.shiftKey && e.code === 'Tab') {
+        e.preventDefault();
+        onNextTab();
+      }
+      if (e.ctrlKey && e.shiftKey && e.code === 'Tab') {
+        e.preventDefault();
+        onPrevTab();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('app:new-tab', onNewTab);
+      window.removeEventListener('app:close-tab', onCloseTab);
+      window.removeEventListener('app:next-tab', onNextTab);
+      window.removeEventListener('app:prev-tab', onPrevTab);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const [settings, setSettings] = useState<Settings>({
     theme: 'default-green',
@@ -239,8 +315,40 @@ export default function App() {
     };
 
     window.playKeystrokeSound = playKeystroke;
+
+    const playBell = () => {
+      if (!settings.soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        // Vintage high-pitch bell beep (800Hz decaying sine wave)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } catch (err) {
+        console.error('Audio synthesizer bell error', err);
+      }
+    };
+    (window as any).playBellSound = playBell;
+
     return () => {
       window.playKeystrokeSound = undefined;
+      (window as any).playBellSound = undefined;
     };
   }, [settings.soundEnabled, settings.keystrokeSound]);
 
@@ -497,6 +605,10 @@ export default function App() {
             <div 
               key={t.id} 
               onClick={() => setActiveTabId(t.id)}
+              onDoubleClick={() => {
+                setEditingTabId(t.id);
+                setEditingName(t.name);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -512,7 +624,43 @@ export default function App() {
                 fontSize: `${settings.tabFontSize}px`
               }}
             >
-              <span>{t.name}</span>
+              {editingTabId === t.id ? (
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={() => {
+                    if (editingName.trim()) {
+                      setTabs(prev => prev.map(tab => tab.id === t.id ? { ...tab, name: editingName.trim() } : tab));
+                    }
+                    setEditingTabId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (editingName.trim()) {
+                        setTabs(prev => prev.map(tab => tab.id === t.id ? { ...tab, name: editingName.trim() } : tab));
+                      }
+                      setEditingTabId(null);
+                    } else if (e.key === 'Escape') {
+                      setEditingTabId(null);
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--fg-color)',
+                    fontSize: 'inherit',
+                    fontFamily: 'inherit',
+                    padding: '2px 4px',
+                    width: '100px',
+                    borderRadius: '2px',
+                    outline: 'none'
+                  }}
+                />
+              ) : (
+                <span>{t.name}</span>
+              )}
               <span 
                 onClick={(e) => {
                   e.stopPropagation();

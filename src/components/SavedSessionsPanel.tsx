@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export interface SavedSession {
   id: string;
@@ -47,6 +47,19 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
   const [user, setUser] = useState('');
   const [keyPath, setKeyPath] = useState('');
   const [startupCmd, setStartupCmd] = useState('');
+
+  const [availableShells, setAvailableShells] = useState<string[]>(['/bin/bash', '/bin/sh']);
+
+  useEffect(() => {
+    if ((window as any).api && (window as any).api.system && (window as any).api.system.getShells) {
+      (window as any).api.system.getShells().then((shells: string[]) => {
+        if (shells && shells.length > 0) {
+          setAvailableShells(shells);
+          setShell(shells[0]);
+        }
+      });
+    }
+  }, []);
 
   if (!isOpen) return null;
 
@@ -317,10 +330,16 @@ export const SavedSessionsPanel: React.FC<SavedSessionsPanelProps> = ({
                 <input 
                   type="text" 
                   required
+                  list="detected-shells"
                   className="setting-input" 
                   value={shell}
                   onChange={(e) => setShell(e.target.value)}
                 />
+                <datalist id="detected-shells">
+                  {availableShells.map(s => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
               </div>
               <div className="setting-row">
                 <label className="setting-label">Arguments (space separated)</label>

@@ -234,7 +234,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
               }
             });
 
-            // Handle Clipboard Copy/Paste
+            // Handle Clipboard Copy/Paste and Tab shortcuts
             term.attachCustomKeyEventHandler((arg) => {
               // Ctrl+Shift+C (Copy Selection)
               if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyC' && arg.type === 'keydown') {
@@ -251,7 +251,34 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
                 });
                 return false; // Prevent sending raw Ctrl+V code to PTY
               }
+              // Ctrl+Shift+T (New Tab Shortcut)
+              if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyT' && arg.type === 'keydown') {
+                window.dispatchEvent(new CustomEvent('app:new-tab'));
+                return false;
+              }
+              // Ctrl+Shift+W (Close Tab Shortcut)
+              if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyW' && arg.type === 'keydown') {
+                window.dispatchEvent(new CustomEvent('app:close-tab', { detail: { id } }));
+                return false;
+              }
+              // Ctrl+Tab (Next Tab Shortcut)
+              if (arg.ctrlKey && !arg.shiftKey && arg.code === 'Tab' && arg.type === 'keydown') {
+                window.dispatchEvent(new CustomEvent('app:next-tab'));
+                return false;
+              }
+              // Ctrl+Shift+Tab (Prev Tab Shortcut)
+              if (arg.ctrlKey && arg.shiftKey && arg.code === 'Tab' && arg.type === 'keydown') {
+                window.dispatchEvent(new CustomEvent('app:prev-tab'));
+                return false;
+              }
               return true;
+            });
+
+            // Handle PTY Bell Beep
+            term.onBell(() => {
+              if ((window as any).playBellSound) {
+                (window as any).playBellSound();
+              }
             });
 
             // Handle PTY Outputs -> Terminal Write
