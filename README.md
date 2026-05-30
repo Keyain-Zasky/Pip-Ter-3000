@@ -2,6 +2,15 @@
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/keyain)
 
+<p align="center">
+  <img src="assets/screenshot1.jpg" width="48%" />
+  <img src="assets/screenshot2.jpg" width="48%" />
+</p>
+<p align="center">
+  <img src="assets/screenshot3.png" width="48%" />
+  <img src="assets/screenshot4.jpg" width="48%" />
+</p>
+
 A highly-customizable, retro-futuristic cyberpunk desktop terminal emulator built on React, xterm.js, and Electron. It brings back the classic CRT monitor aesthetics (phosphor glow, curvature distortion, scanlines, flicker, and mechanical keyboard sounds) while providing modern features like SSH profiles, real-time command/error syntax highlighting, and hardware-accelerated layouts.
 
 ---
