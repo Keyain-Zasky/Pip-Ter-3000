@@ -1,5 +1,7 @@
 # Pip-Ter 3000 ⚡
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/keyain)
+
 A highly-customizable, retro-futuristic cyberpunk desktop terminal emulator built on React, xterm.js, and Electron. It brings back the classic CRT monitor aesthetics (phosphor glow, curvature distortion, scanlines, flicker, and mechanical keyboard sounds) while providing modern features like SSH profiles, real-time command/error syntax highlighting, and hardware-accelerated layouts.
 
 ---

@@ -103,6 +103,15 @@ function createWindow() {
     }
   });
 
+  // Open external links in default system browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      require('electron').shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
+
   mainWindow.on('resize', () => {
     if (mainWindow) {
       mainWindow.webContents.invalidate();

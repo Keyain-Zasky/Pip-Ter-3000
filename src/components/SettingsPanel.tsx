@@ -519,6 +519,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           📥 Import Config
         </button>
       </div>
+
+      <div style={{ borderTop: '1px solid var(--border-color)', margin: '18px 0' }} />
+
+      <a 
+        href="https://buymeacoffee.com/keyain" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="close-drawer-btn" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px', 
+          padding: '8px 12px', 
+          fontSize: '0.85rem', 
+          textDecoration: 'none',
+          boxSizing: 'border-box'
+        }}
+      >
+        ☕ Buy me a coffee
+      </a>
     </div>
   );
 };
