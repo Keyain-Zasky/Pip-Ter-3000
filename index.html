@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pip-Ter 3000</title>
+    <!-- We will import custom fonts (VT323, Share Tech Mono, Outfit, etc.) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Share+Tech+Mono&family=VT323&family=Outfit:wght@100..900&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- SVG filters for CRT retro effects -->
+    <svg style="position: absolute; width: 0; height: 0;" width="0" height="0">
+      <defs>
+        <!-- Chromatic Aberration Filter (Mathematical RGB split) -->
+        <filter id="rgb-split">
+          <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" in="SourceGraphic" result="red-channel"/>
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" in="SourceGraphic" result="green-channel"/>
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" in="SourceGraphic" result="blue-channel"/>
+          
+          <feOffset dx="2" dy="0" in="red-channel" result="red-offset"/>
+          <feOffset dx="-2" dy="0" in="blue-channel" result="blue-offset"/>
+          
+          <feBlend mode="screen" in="red-offset" in2="green-channel" result="red-green"/>
+          <feBlend mode="screen" in="red-green" in2="blue-offset" result="final"/>
+        </filter>
+        
+        <!-- Screen Warping / CRT Distortion -->
+        <!-- We use a custom displacement map filter using a radial gradient to warp towards center -->
+        <filter id="crt-curve" x="-10%" y="-10%" width="120%" height="120%">
+          <!-- First we create a map with a radial gradient -->
+          <!-- For simplicity in standard SVG, we can also use a custom turbulence, but a subtle displacement is amazing -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.00001 0.05" numOctaves="1" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" result="warped" />
+        </filter>
+      </defs>
+    </svg>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
