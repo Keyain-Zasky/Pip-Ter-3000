@@ -595,8 +595,63 @@ export default function App() {
     <div className="app-container">
       {/* Titlebar window headers */}
       <div className="titlebar">
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <span className="window-title">⚡ Pip-Ter 3000</span>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', WebkitAppRegion: 'no-drag' } as any}>
+          <span className="window-title">Pip-Ter 3000</span>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button 
+              className={`close-drawer-btn ${isSessionsOpen ? 'active' : ''}`}
+              style={{ 
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                boxSizing: 'border-box',
+                background: isSessionsOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                border: '1px solid var(--border-color)',
+                color: 'var(--fg-color)',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+              onClick={() => { 
+                setIsSessionsOpen(!isSessionsOpen); 
+                setIsSettingsOpen(false); 
+              }}
+              title="Connections"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </button>
+            <button 
+              className={`close-drawer-btn ${isSettingsOpen ? 'active' : ''}`}
+              style={{ 
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                boxSizing: 'border-box',
+                background: isSettingsOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                border: '1px solid var(--border-color)',
+                color: 'var(--fg-color)',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+              onClick={() => { 
+                setIsSettingsOpen(!isSettingsOpen); 
+                setIsSessionsOpen(false); 
+              }}
+              title="Settings"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Tab Headers Row */}
@@ -697,73 +752,6 @@ export default function App() {
 
       {/* Main layout */}
       <div className="main-layout">
-        {/* Left vertical menu dock */}
-        <div 
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            width: '50px',
-            borderRight: '2px solid var(--border-color)',
-            background: 'rgba(0, 0, 0, 0.4)',
-            alignItems: 'center',
-            paddingTop: '20px',
-            paddingBottom: '20px',
-            justifyContent: 'space-between',
-            zIndex: 10,
-            boxSizing: 'border-box',
-            flexShrink: 0,
-            height: '100%'
-          }}
-        >
-          {/* Top Icons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-            <button 
-              className="close-drawer-btn" 
-              style={{ 
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0,
-                boxSizing: 'border-box'
-              }}
-              onClick={() => { 
-                setIsSessionsOpen(!isSessionsOpen); 
-                setIsSettingsOpen(false); 
-              }}
-              title="Connections"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Bottom Icons (Settings) */}
-          <button 
-            className="close-drawer-btn" 
-            style={{ 
-              width: '36px',
-              height: '36px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              boxSizing: 'border-box'
-            }}
-            onClick={() => { 
-              setIsSettingsOpen(!isSettingsOpen); 
-              setIsSessionsOpen(false); 
-            }}
-            title="Settings"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
-        </div>
         {/* Custom background Media handler */}
         {settings.customBackground && (
           <div className="bg-media-container">
