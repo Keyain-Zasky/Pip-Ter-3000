@@ -467,9 +467,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </div>
 
-      <div className="setting-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-        <div>
-          <label className="setting-label" style={{ fontSize: '0.65rem' }}>Green (Cmd)</label>
+      <div style={{ display: 'flex', gap: '6px', width: '100%', marginBottom: '14px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <label className="setting-label" style={{ fontSize: '0.65rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Green (Cmd)</label>
           <input 
             type="color" 
             className="setting-input" 
@@ -478,8 +478,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             onChange={(e) => onUpdateSettings({ ansiGreen: e.target.value })}
           />
         </div>
-        <div>
-          <label className="setting-label" style={{ fontSize: '0.65rem' }}>Yellow (Warn)</label>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <label className="setting-label" style={{ fontSize: '0.65rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Yellow (Warn)</label>
           <input 
             type="color" 
             className="setting-input" 
@@ -488,8 +488,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             onChange={(e) => onUpdateSettings({ ansiYellow: e.target.value })}
           />
         </div>
-        <div>
-          <label className="setting-label" style={{ fontSize: '0.65rem' }}>Cyan (Info)</label>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <label className="setting-label" style={{ fontSize: '0.65rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Cyan (Info)</label>
           <input 
             type="color" 
             className="setting-input" 
@@ -506,17 +506,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <div style={{ display: 'flex', gap: '8px' }}>
         <button 
           className="close-drawer-btn" 
-          style={{ flex: 1, padding: '8px 4px', fontSize: '0.8rem' }}
+          style={{ flex: 1, padding: '8px 4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={onExportSettings}
         >
-          📤 Export Config
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Export Config
         </button>
         <button 
           className="close-drawer-btn" 
-          style={{ flex: 1, padding: '8px 4px', fontSize: '0.8rem' }}
+          style={{ flex: 1, padding: '8px 4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={onImportSettings}
         >
-          📥 Import Config
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Import Config
         </button>
       </div>
 
@@ -531,14 +541,21 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          gap: '8px', 
+          gap: '6px', 
           padding: '8px 12px', 
           fontSize: '0.85rem', 
           textDecoration: 'none',
           boxSizing: 'border-box'
         }}
       >
-        ☕ Buy me a coffee
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+          <line x1="6" y1="1" x2="6" y2="4" />
+          <line x1="10" y1="1" x2="10" y2="4" />
+          <line x1="14" y1="1" x2="14" y2="4" />
+        </svg>
+        Buy me a coffee
       </a>
     </div>
   );
