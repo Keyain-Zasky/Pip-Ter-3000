@@ -240,6 +240,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             term.attachCustomKeyEventHandler((arg) => {
               // Ctrl+Shift+C (Copy Selection)
               if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyC' && arg.type === 'keydown') {
+                arg.preventDefault();
                 const selection = term.getSelection();
                 if (selection) {
                   navigator.clipboard.writeText(selection);
@@ -248,6 +249,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
               }
               // Ctrl+Shift+V (Paste Clipboard text)
               if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyV' && arg.type === 'keydown') {
+                arg.preventDefault();
                 navigator.clipboard.readText().then((text) => {
                   window.api.pty.write(ptyId, text);
                 });
