@@ -17,9 +17,16 @@ A highly-customizable, retro-futuristic cyberpunk desktop terminal emulator buil
   - Jitter/shake effect simulating hardware voltage spikes
 - **Built-in Sound Synthesizer**: Procedural keystroke sound FX generated dynamically using the Web Audio API (profiles: *Typewriter*, *Mechanical*, *Cyber Beep*).
 - **Session & SSH Connection Manager**: Save local terminal configurations or remote SSH credentials grouped into folders with collapsing navigation.
+- **Shell Auto-Detection**: Electron scans `/etc/shells` on launch to present auto-complete suggestions inside a `<datalist>` dropdown when adding new local connections.
 - **Dynamic CSS Theme Engine**: Seamlessly switch between themes (*Amber Fallout, Nord, Dracula, Cyberpunk Overload, Gameboy LCD, Red Alert, Synthwave*) or create custom themes using detailed color pickers.
 - **Smart Stream Highlighter**: Real-time coloring of standard keywords (errors/exceptions highlighted in red, commands in green) directly inside the PTY stream.
 - **Clipboard Integration**: Support for native terminal clipboard shortcuts (`Ctrl+Shift+C` to copy selections, `Ctrl+Shift+V` to paste text).
+- **System Bell Sound Beep**: Triggers a synthesized vintage terminal beep (800Hz decaying wave via Web Audio API) whenever the console receives a Bell code (`\x07`).
+- **Tab Layout & Key Shortcuts**: Support for keyboard navigation shortcuts:
+  - `Ctrl+Shift+T`: Open a new terminal tab (Bash)
+  - `Ctrl+Shift+W`: Close the active tab
+  - `Ctrl+Tab` / `Ctrl+Shift+Tab`: Cycle through tabs forward/back
+- **Inline Tab Renaming**: Double-click any tab header to rename it dynamically via an inline styled text input.
 - **Glassmorphic Transparency**: Fully adjustable background transparency and backdrop blur (`backdrop-filter`) blending beautifully with your Linux window compositor.
 - **Custom Background Media**: Support for adding static image backdrops or looping `.mp4`/`.webm` background videos behind the console layout.
 
