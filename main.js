@@ -163,6 +163,12 @@ ipcMain.handle('pty:spawn', (event, { shell, args, cols, rows, env = {} }) => {
     COLORTERM: 'truecolor'
   };
 
+  // Prevent npm-specific environment leakage into user terminal session (resolves NVM conflicts)
+  delete finalEnv.npm_config_prefix;
+  delete finalEnv.npm_package_name;
+  delete finalEnv.npm_package_version;
+  delete finalEnv.npm_lifecycle_event;
+
   const ptyProcess = pty.spawn(finalShell, finalArgs, {
     name: 'xterm-color',
     cols: cols || 80,
