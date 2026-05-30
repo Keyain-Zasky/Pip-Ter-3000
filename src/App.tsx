@@ -174,14 +174,8 @@ export default function App() {
           if (config.settings) setSettings(prev => ({ ...prev, ...config.settings }));
           if (config.savedSessions) setSavedSessions(config.savedSessions);
           
-          // Open default tab if config loaded
-          if (config.savedSessions && config.savedSessions.length > 0) {
-            // Find default or use first session
-            openSessionTab(config.savedSessions[0]);
-          } else {
-            // Backup tab
-            addTab('/bin/bash', [], 'Bash');
-          }
+          // Open an empty local terminal tab on startup
+          addTab('/bin/bash', [], 'Bash');
         }
       } catch (err) {
         console.error('Failed loading Electron configuration', err);
