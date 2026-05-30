@@ -132,6 +132,8 @@ export default function App() {
     };
   }, []);
 
+
+
   const [settings, setSettings] = useState<Settings>({
     theme: 'default-green',
     fontFamily: 'VT323',
@@ -522,6 +524,24 @@ export default function App() {
       return updated;
     });
   };
+
+  // Zoom terminal text on Ctrl + Mouse Wheel
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1 : -1;
+        const newSize = Math.max(10, Math.min(28, settings.fontSize + delta));
+        if (newSize !== settings.fontSize) {
+          handleUpdateSettings({ fontSize: newSize });
+        }
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [settings.fontSize]);
 
   const handleExportSettings = async () => {
     try {
