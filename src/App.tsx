@@ -43,18 +43,21 @@ interface Settings {
   };
 }
 
-interface Pane {
+interface PaneNode {
   id: string;
-  shell: string;
-  args: string[];
+  type: 'leaf' | 'split';
+  splitDirection?: 'vertical' | 'horizontal';
+  children?: PaneNode[];
+  shell?: string;
+  args?: string[];
   env?: Record<string, string>;
+  cwd?: string;
 }
 
 interface Tab {
   id: string;
   name: string;
-  splitType: 'vertical' | 'horizontal' | null;
-  panes: Pane[];
+  rootPane: PaneNode;
 }
 
 // Extends Window to host sound synthesizers
@@ -96,6 +99,7 @@ const getEventKeyCombo = (e: KeyboardEvent) => {
 export default function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
+  const [activePaneId, setActivePaneId] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSessionsOpen, setIsSessionsOpen] = useState(false);
 
@@ -153,12 +157,19 @@ export default function App() {
     (async () => {
       try {
         const config = await (window as any).api.config.load();
+        let startCwd = undefined;
+        try {
+          startCwd = await (window as any).api.system.getStartupDir();
+        } catch (e) {
+          console.warn("Failed retrieving startup directory", e);
+        }
+
         if (config) {
           if (config.settings) setSettings(prev => ({ ...prev, ...config.settings }));
           if (config.savedSessions) setSavedSessions(config.savedSessions);
           
-          // Open an empty local terminal tab on startup
-          addTab('/bin/bash', [], 'Bash');
+          // Open an empty local terminal tab on startup with target directory
+          addTab('/bin/bash', [], 'Bash', undefined, startCwd);
         }
       } catch (err) {
         console.error('Failed loading Electron configuration', err);
@@ -329,17 +340,73 @@ export default function App() {
     };
   }, [settings.soundEnabled, settings.keystrokeSound]);
 
-  const addTab = (shell: string, args: string[], name: string, env?: Record<string, string>) => {
+  const countLeaves = (node: PaneNode): number => {
+    if (node.type === 'leaf') return 1;
+    if (node.children) {
+      return node.children.reduce((acc, child) => acc + countLeaves(child), 0);
+    }
+    return 0;
+  };
+
+  const removePaneFromTree = (node: PaneNode, paneId: string): PaneNode | null => {
+    if (node.type === 'leaf') {
+      return node.id === paneId ? null : node;
+    }
+    if (node.children) {
+      const updatedChildren = node.children
+        .map(child => removePaneFromTree(child, paneId))
+        .filter((child): child is PaneNode => child !== null);
+      if (updatedChildren.length === 0) return null;
+      if (updatedChildren.length === 1) return updatedChildren[0];
+      return { ...node, children: updatedChildren };
+    }
+    return node;
+  };
+
+  const splitPaneInTree = (
+    node: PaneNode,
+    targetId: string,
+    direction: 'vertical' | 'horizontal',
+    newPane: PaneNode
+  ): PaneNode => {
+    if (node.type === 'leaf') {
+      if (node.id === targetId) {
+        return {
+          id: `split-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'split',
+          splitDirection: direction,
+          children: [node, newPane]
+        };
+      }
+      return node;
+    }
+    if (node.children) {
+      return {
+        ...node,
+        children: node.children.map(child => splitPaneInTree(child, targetId, direction, newPane))
+      };
+    }
+    return node;
+  };
+
+  const addTab = (shell: string, args: string[], name: string, env?: Record<string, string>, cwd?: string) => {
     const tabId = `tab-${Math.random().toString(36).substr(2, 9)}`;
     const paneId = `pane-${Math.random().toString(36).substr(2, 9)}`;
     const newTab: Tab = {
       id: tabId,
       name,
-      splitType: null,
-      panes: [{ id: paneId, shell, args, env }]
+      rootPane: {
+        id: paneId,
+        type: 'leaf',
+        shell,
+        args,
+        env,
+        cwd
+      }
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(tabId);
+    setActivePaneId(paneId);
   };
 
   const closeTab = (id: string) => {
@@ -366,13 +433,13 @@ export default function App() {
     setTabs(prev => {
       const updated = prev.map(t => {
         if (t.id !== tabId) return t;
-        const filteredPanes = t.panes.filter(p => p.id !== paneId);
+        const newRoot = removePaneFromTree(t.rootPane, paneId);
+        if (!newRoot) return null;
         return {
           ...t,
-          splitType: filteredPanes.length <= 1 ? null : t.splitType,
-          panes: filteredPanes
+          rootPane: newRoot
         };
-      }).filter(t => t.panes.length > 0);
+      }).filter((t): t is Tab => t !== null);
 
       const stillExists = updated.some(t => t.id === activeTabId);
       if (!stillExists) {
@@ -387,25 +454,41 @@ export default function App() {
   };
 
   const splitActiveTab = (direction: 'vertical' | 'horizontal') => {
+    const activeTab = tabsRef.current.find(t => t.id === activeTabIdRef.current);
+    if (!activeTab) return;
+
+    const leafNodes: PaneNode[] = [];
+    const collectLeaves = (n: PaneNode) => {
+      if (n.type === 'leaf') leafNodes.push(n);
+      else if (n.children) n.children.forEach(collectLeaves);
+    };
+    collectLeaves(activeTab.rootPane);
+
+    let targetPaneId = activePaneId;
+    if (!leafNodes.some(l => l.id === targetPaneId)) {
+      targetPaneId = leafNodes[0]?.id || '';
+    }
+    if (!targetPaneId) return;
+
+    const currentPane = leafNodes.find(l => l.id === targetPaneId);
+    const newPaneId = `pane-${Math.random().toString(36).substr(2, 9)}`;
+    const newPane: PaneNode = {
+      id: newPaneId,
+      type: 'leaf',
+      shell: currentPane?.shell || '/bin/bash',
+      args: currentPane?.args || [],
+      env: currentPane?.env,
+      cwd: currentPane?.cwd
+    };
+
     setTabs(prev => prev.map(t => {
-      if (t.id !== activeTabId) return t;
-      if (t.panes.length >= 2) {
-        return t; // Max 2 split panes per tab for visual sizing layouts
-      }
-      const newPaneId = `pane-${Math.random().toString(36).substr(2, 9)}`;
-      const currentPane = t.panes[t.panes.length - 1];
-      const newPane = {
-        id: newPaneId,
-        shell: currentPane?.shell || '/bin/bash',
-        args: currentPane?.args || [],
-        env: currentPane?.env
-      };
+      if (t.id !== activeTabIdRef.current) return t;
       return {
         ...t,
-        splitType: direction,
-        panes: [...t.panes, newPane]
+        rootPane: splitPaneInTree(t.rootPane, targetPaneId, direction, newPane)
       };
     }));
+    setActivePaneId(newPaneId);
   };
 
   const openSessionTab = (session: SavedSession) => {
@@ -704,6 +787,104 @@ export default function App() {
   const handleMaximize = () => (window as any).api.window.maximize();
   const handleClose = () => (window as any).api.window.close();
 
+  const renderPaneNode = (node: PaneNode, tab: Tab, isTabActive: boolean): React.ReactNode => {
+    if (node.type === 'leaf') {
+      const isPaneActive = activePaneId === node.id;
+      return (
+        <div 
+          key={node.id} 
+          style={{ 
+            flex: 1, 
+            height: '100%', 
+            width: '100%', 
+            position: 'relative',
+            border: isPaneActive ? '1px solid var(--border-color)' : '1px solid transparent',
+            borderRadius: '4px',
+            boxSizing: 'border-box'
+          }}
+          onClickCapture={() => setActivePaneId(node.id)}
+          onFocusCapture={() => setActivePaneId(node.id)}
+        >
+          <TerminalTab
+            id={node.id}
+            active={isTabActive}
+            sessionConfig={{ shell: node.shell || '/bin/bash', args: node.args || [], env: node.env, cwd: node.cwd }}
+            settings={{
+              theme: settings.theme,
+              fontFamily: settings.fontFamily,
+              fontSize: settings.fontSize,
+              glowIntensity: settings.glowIntensity,
+              foreground: settings.foreground,
+              background: settings.background,
+              cursor: settings.cursor,
+              ansiRed: settings.ansiRed,
+              ansiGreen: settings.ansiGreen,
+              ansiYellow: settings.ansiYellow,
+              ansiCyan: settings.ansiCyan
+            }}
+            onClose={() => closePane(tab.id, node.id)}
+          />
+          {countLeaves(tab.rootPane) > 1 && (
+            <button
+              onClick={() => closePane(tab.id, node.id)}
+              style={{
+                position: 'absolute',
+                top: '6px',
+                right: '6px',
+                zIndex: 100,
+                background: 'rgba(0, 0, 0, 0.7)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--fg-color)',
+                borderRadius: '4px',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontFamily: 'VT323, monospace',
+                padding: 0,
+                boxShadow: '0 0 8px rgba(0, 0, 0, 0.8)',
+                textShadow: '0 0 2px var(--fg-color)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--fg-color)';
+                e.currentTarget.style.color = '#000000';
+                e.currentTarget.style.boxShadow = '0 0 12px var(--fg-color)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                e.currentTarget.style.color = 'var(--fg-color)';
+                e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 0, 0, 0.8)';
+              }}
+              title="Close split pane"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div 
+          key={node.id}
+          style={{ 
+            display: 'flex', 
+            flexDirection: node.splitDirection === 'horizontal' ? 'column' : 'row', 
+            width: '100%', 
+            height: '100%', 
+            gap: '8px',
+            flex: 1
+          }}
+        >
+          {node.children?.map(child => renderPaneNode(child, tab, isTabActive))}
+        </div>
+      );
+    }
+  };
+
   // Determine media element properties
   const isVideoBackground = settings.customBackground && (
     settings.customBackground.endsWith('.mp4') || 
@@ -989,35 +1170,12 @@ export default function App() {
                 key={t.id}
                 style={{
                   display: isTabActive ? 'flex' : 'none',
-                  flexDirection: t.splitType === 'horizontal' ? 'column' : 'row',
                   width: '100%',
                   height: '100%',
-                  gap: '8px'
+                  flexDirection: 'column'
                 }}
               >
-                {t.panes.map(p => (
-                  <div key={p.id} style={{ flex: 1, height: '100%', width: '100%', position: 'relative' }}>
-                    <TerminalTab
-                      id={p.id}
-                      active={isTabActive}
-                      sessionConfig={{ shell: p.shell, args: p.args, env: p.env }}
-                      settings={{
-                        theme: settings.theme,
-                        fontFamily: settings.fontFamily,
-                        fontSize: settings.fontSize,
-                        glowIntensity: settings.glowIntensity,
-                        foreground: settings.foreground,
-                        background: settings.background,
-                        cursor: settings.cursor,
-                        ansiRed: settings.ansiRed,
-                        ansiGreen: settings.ansiGreen,
-                        ansiYellow: settings.ansiYellow,
-                        ansiCyan: settings.ansiCyan
-                      }}
-                      onClose={() => closePane(t.id, p.id)}
-                    />
-                  </div>
-                ))}
+                {renderPaneNode(t.rootPane, t, isTabActive)}
               </div>
             );
           })}

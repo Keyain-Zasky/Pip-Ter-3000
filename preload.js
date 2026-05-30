@@ -28,7 +28,8 @@ contextBridge.exposeInMainWorld('api', {
     import: () => ipcRenderer.invoke('config:import')
   },
   system: {
-    getShells: () => ipcRenderer.invoke('system:shells')
+    getShells: () => ipcRenderer.invoke('system:shells'),
+    getStartupDir: () => ipcRenderer.invoke('system:startupDir')
   },
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),

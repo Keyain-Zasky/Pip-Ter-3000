@@ -1,4 +1,4 @@
-# Pip-Ter 3000 (v1.0.0)
+# Pip-Ter 3000 (v1.2.0)
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/keyain)
 
@@ -26,6 +26,10 @@ A highly-customizable, retro-futuristic cyberpunk desktop terminal emulator buil
   - Jitter/shake effect simulating hardware voltage spikes
 - **Built-in Sound Synthesizer**: Procedural keystroke sound FX generated dynamically using the Web Audio API (profiles: *Typewriter*, *Mechanical*, *Cyber Beep*).
 - **Session & SSH Connection Manager**: Save local terminal configurations or remote SSH credentials grouped into folders with collapsing navigation.
+- **Session Connection Search Bar**: Quick real-time filtering of connections inside the sidebar panel with automated folder expansion.
+- **Customizable Global Hotkeys**: Remap standard emulator keybindings (New Tab, Close Tab, splits, tab navigation) directly from the Settings drawer.
+- **Recursive Nested Split Panes**: Dividable terminal screens vertically and horizontally to any hierarchical level. Individual splits can be closed manually using floating close buttons.
+- **Dolphin System Integration**: Full support for right-click context folder execution ("Open terminal here") starting the PTY shell directly in the selected folder.
 - **Shell Auto-Detection**: Electron scans `/etc/shells` on launch to present auto-complete suggestions inside a `<datalist>` dropdown when adding new local connections.
 - **Dynamic CSS Theme Engine**: Seamlessly switch between themes (*Amber Fallout, Nord, Dracula, Cyberpunk Overload, Gameboy LCD, Red Alert, Synthwave*) or create custom themes using detailed color pickers.
 - **Smart Stream Highlighter**: Real-time coloring of standard keywords (errors/exceptions highlighted in red, commands in green) directly inside the PTY stream.

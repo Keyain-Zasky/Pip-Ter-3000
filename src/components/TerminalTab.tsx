@@ -9,6 +9,7 @@ interface TerminalTabProps {
     shell: string;
     args: string[];
     env?: Record<string, string>;
+    cwd?: string;
   };
   settings: {
     theme: string;
@@ -30,7 +31,7 @@ declare global {
   interface Window {
     api: {
       pty: {
-        spawn: (options: { shell: string; args: string[]; cols: number; rows: number; env?: Record<string, string> }) => Promise<string>;
+        spawn: (options: { shell: string; args: string[]; cols: number; rows: number; env?: Record<string, string>; cwd?: string }) => Promise<string>;
         write: (id: string, data: string) => void;
         resize: (id: string, cols: number, rows: number) => void;
         kill: (id: string) => void;
@@ -218,7 +219,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             args: sessionConfig.args,
             cols: initialCols,
             rows: initialRows,
-            env: sessionConfig.env
+            env: sessionConfig.env,
+            cwd: sessionConfig.cwd
           }).then((ptyId: string) => {
             if (isCleanedUp) {
               window.api.pty.kill(ptyId);

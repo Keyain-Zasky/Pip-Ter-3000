@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const pty = require('node-pty');
 
+
 // Enable transparency support with GPU hardware acceleration
 // app.disableHardwareAcceleration(); // Disabled to allow GPU acceleration as requested
 
@@ -150,7 +151,36 @@ app.on('window-all-closed', () => {
 
 // --- IPC Communication for PTY ---
 
-ipcMain.handle('pty:spawn', (event, { shell, args, cols, rows, env = {} }) => {
+function getStartupDir() {
+  for (let i = 2; i < process.argv.length; i++) {
+    let arg = process.argv[i];
+    if (arg.startsWith('file://')) {
+      try {
+        const { fileURLToPath } = require('url');
+        arg = fileURLToPath(arg);
+      } catch (e) {}
+    }
+    try {
+      if (path.isAbsolute(arg) && fs.existsSync(arg) && fs.statSync(arg).isDirectory() && arg !== __dirname) {
+        return arg;
+      }
+    } catch (e) {}
+  }
+
+  // Fallback to process.cwd() if it is a directory and not the application itself or root directory
+  try {
+    const currentCwd = process.cwd();
+    if (currentCwd && currentCwd !== __dirname && currentCwd !== '/' && currentCwd !== path.dirname(__dirname)) {
+      if (fs.existsSync(currentCwd) && fs.statSync(currentCwd).isDirectory()) {
+        return currentCwd;
+      }
+    }
+  } catch (e) {}
+
+  return null;
+}
+
+ipcMain.handle('pty:spawn', (event, { shell, args, cols, rows, env = {}, cwd }) => {
   const id = `pty-${Math.random().toString(36).substr(2, 9)}`;
   const finalShell = shell || process.env.SHELL || '/bin/bash';
   const finalArgs = args || [];
@@ -169,11 +199,13 @@ ipcMain.handle('pty:spawn', (event, { shell, args, cols, rows, env = {} }) => {
   delete finalEnv.npm_package_version;
   delete finalEnv.npm_lifecycle_event;
 
+  const finalCwd = cwd || process.env.HOME;
+
   const ptyProcess = pty.spawn(finalShell, finalArgs, {
     name: 'xterm-color',
     cols: cols || 80,
     rows: rows || 24,
-    cwd: process.env.HOME,
+    cwd: finalCwd,
     env: finalEnv
   });
 
@@ -258,6 +290,10 @@ ipcMain.handle('system:shells', () => {
   }
   // Fallback common shells
   return ['/bin/bash', '/bin/sh'];
+});
+
+ipcMain.handle('system:startupDir', () => {
+  return getStartupDir();
 });
 
 // Config IPC
