@@ -1,4 +1,4 @@
-# Pip-Ter 3000 ⚡
+# Pip-Ter 3000
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/keyain)
 
@@ -40,8 +40,8 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your Linux system
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pip-ter-3000.git
-   cd pip-ter-3000
+   git clone https://github.com/Keyain-Zasky/Pip-Ter-3000.git
+   cd Pip-Ter-3000
    ```
 2. Install the dependencies:
    ```bash
@@ -55,6 +55,21 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your Linux system
    ```bash
    npm start
    ```
+
+### Desktop Integration & Default Terminal (KDE Plasma) 🖥️
+
+You can easily register Pip-Ter 3000 to launch as a native application and set it as your default terminal emulator:
+
+1. **Register the Desktop Launcher**:
+   Run the registration script (it compiles the production assets, installs the `.desktop` file to `~/.local/share/applications/`, and updates your desktop database):
+   ```bash
+   ./register-desktop.sh
+   ```
+2. **Set as Default Terminal**:
+   - Open your system menu and search for **System Settings**.
+   - Navigate to **Applications** -> **Default Applications**.
+   - Under **Terminal Emulator**, choose **Pip-Ter 3000**.
+   - To configure keyboard shortcuts, go to **Shortcuts** inside System Settings, add a shortcut command mapping, and bind it to your preferred keys (e.g. `Shift+Meta+T`).
 
 ---
 
