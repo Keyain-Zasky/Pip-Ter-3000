@@ -58,7 +58,7 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your Linux system
 
 ---
 
-## Known Issues (Limiti Noti) ⚠️
+## Known Issues ⚠️
 
 ### 1. Transparent Frameless Window Resizing on Wayland (Linux)
 - **Symptom**: Resizing the window leaves black bands or areas on the screen, and the viewport fails to stretch/contract to the new window size.
