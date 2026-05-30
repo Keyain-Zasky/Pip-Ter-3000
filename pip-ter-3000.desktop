@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pip-Ter 3000
+Comment=A retro-futuristic cyberpunk terminal emulator
+Exec=env NODE_ENV=production npx electron /home/keyain/Documents/antigravity/lively-goodall .
+Icon=utilities-terminal
+Path=/home/keyain/Documents/antigravity/lively-goodall
+Terminal=false
+Categories=System;TerminalEmulator;Utility;
+StartupWMClass=retropulse
