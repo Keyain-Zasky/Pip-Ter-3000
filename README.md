@@ -1,4 +1,4 @@
-# Pip-Ter 3000 (v1.2.0)
+# Pip-Ter 3000 (v1.2.1)
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/keyain)
 
@@ -30,6 +30,8 @@ A highly-customizable, retro-futuristic cyberpunk desktop terminal emulator buil
 - **Customizable Global Hotkeys**: Remap standard emulator keybindings (New Tab, Close Tab, splits, tab navigation) directly from the Settings drawer.
 - **Recursive Nested Split Panes**: Dividable terminal screens vertically and horizontally to any hierarchical level. Individual splits can be closed manually using floating close buttons.
 - **Dolphin System Integration**: Full support for right-click context folder execution ("Open terminal here") starting the PTY shell directly in the selected folder.
+- **Active Monitor Focus Placement**: The terminal window automatically launches centered on the monitor containing the active mouse cursor.
+- **Interactive App Compatibility**: Optimized hotkey filtering bubbles up only global terminal shortcuts, ensuring standard Ctrl keys pass directly to console applications (like `nano` or `vim`).
 - **Shell Auto-Detection**: Electron scans `/etc/shells` on launch to present auto-complete suggestions inside a `<datalist>` dropdown when adding new local connections.
 - **Dynamic CSS Theme Engine**: Seamlessly switch between themes (*Amber Fallout, Nord, Dracula, Cyberpunk Overload, Gameboy LCD, Red Alert, Synthwave*) or create custom themes using detailed color pickers.
 - **Smart Stream Highlighter**: Real-time coloring of standard keywords (errors/exceptions highlighted in red, commands in green) directly inside the PTY stream.
