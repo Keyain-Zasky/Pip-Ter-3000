@@ -70,10 +70,25 @@ function saveConfig(config) {
 
 function createWindow() {
   const config = loadConfig();
+  const { screen } = require('electron');
+  
+  let x = undefined;
+  let y = undefined;
+  try {
+    const point = screen.getCursorScreenPoint();
+    const display = screen.getDisplayNearestPoint(point);
+    const workArea = display.workArea;
+    x = Math.round(workArea.x + (workArea.width - 1000) / 2);
+    y = Math.round(workArea.y + (workArea.height - 700) / 2);
+  } catch (e) {
+    console.error('Failed to resolve active monitor coordinates:', e);
+  }
   
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    x: x,
+    y: y,
     minWidth: 600,
     minHeight: 400,
     transparent: true,

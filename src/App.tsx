@@ -820,7 +820,8 @@ export default function App() {
               ansiRed: settings.ansiRed,
               ansiGreen: settings.ansiGreen,
               ansiYellow: settings.ansiYellow,
-              ansiCyan: settings.ansiCyan
+              ansiCyan: settings.ansiCyan,
+              hotkeys: settings.hotkeys
             }}
             onClose={() => closePane(tab.id, node.id)}
           />

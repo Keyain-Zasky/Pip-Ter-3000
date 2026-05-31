@@ -23,6 +23,7 @@ interface TerminalTabProps {
     ansiGreen?: string;
     ansiYellow?: string;
     ansiCyan?: string;
+    hotkeys?: Record<string, string>;
   };
   onClose: () => void;
 }
@@ -51,6 +52,34 @@ declare global {
     };
   }
 }
+
+const DEFAULT_HOTKEYS = {
+  newTab: 'Ctrl+Shift+T',
+  closeTab: 'Ctrl+Shift+W',
+  nextTab: 'Ctrl+Tab',
+  prevTab: 'Ctrl+Shift+Tab',
+  splitVertical: 'Ctrl+Shift+E',
+  splitHorizontal: 'Ctrl+Shift+O'
+};
+
+const getEventKeyCombo = (e: KeyboardEvent) => {
+  const parts = [];
+  if (e.ctrlKey) parts.push('Ctrl');
+  if (e.shiftKey) parts.push('Shift');
+  if (e.altKey) parts.push('Alt');
+  if (e.metaKey) parts.push('Meta');
+  
+  if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') {
+    // Modifier key alone
+  } else {
+    if (e.key === 'Tab') {
+      parts.push('Tab');
+    } else {
+      parts.push(e.key.toUpperCase());
+    }
+  }
+  return parts.join('+');
+};
 
 export const TerminalTab: React.FC<TerminalTabProps> = ({
   id,
@@ -255,13 +284,15 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
                 });
                 return false;
               }
-              // Let global hotkeys (Ctrl+Shift+T, Ctrl+Tab, splits, etc.) bypass xterm to bubble up
-              if (arg.ctrlKey && arg.type === 'keydown') {
-                // Keep Ctrl+C (SIGINT) passing to terminal shell PTY
-                if (arg.code === 'KeyC' && !arg.shiftKey) {
-                  return true;
+              // Check if the key combination matches any active global hotkey.
+              // If it does, prevent xterm.js from consuming it, allowing it to bubble.
+              if (arg.type === 'keydown') {
+                const currentHotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
+                const combo = getEventKeyCombo(arg);
+                const isGlobalHotkey = Object.values(currentHotkeys).includes(combo);
+                if (isGlobalHotkey) {
+                  return false;
                 }
-                return false;
               }
               return true;
             });
