@@ -947,7 +947,7 @@ export default function App() {
         </div>
 
         {/* Tab Headers Row */}
-        <div style={{ display: 'flex', flex: 1, marginLeft: '20px', gap: '4px', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', flex: 1, marginLeft: '20px', gap: '4px', overflowX: 'auto', WebkitAppRegion: 'no-drag' } as any}>
           {tabs.map(t => (
             <div 
               key={t.id} 
