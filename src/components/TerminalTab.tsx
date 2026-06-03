@@ -5,6 +5,7 @@ import { FitAddon } from 'xterm-addon-fit';
 interface TerminalTabProps {
   id: string;
   active: boolean;
+  focused: boolean;
   sessionConfig: {
     shell: string;
     args: string[];
@@ -84,6 +85,7 @@ const getEventKeyCombo = (e: KeyboardEvent) => {
 export const TerminalTab: React.FC<TerminalTabProps> = ({
   id,
   active,
+  focused,
   sessionConfig,
   settings,
   onClose
@@ -180,9 +182,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   };
 
   const activeRef = useRef(active);
+  const focusedRef = useRef(focused);
   useEffect(() => {
     activeRef.current = active;
-  }, [active]);
+    focusedRef.current = focused;
+  }, [active, focused]);
 
   useEffect(() => {
     let activeCleanup: (() => void) | null = null;
@@ -229,7 +233,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           term.open(containerRef.current);
           terminalRef.current = term;
           fitAddonRef.current = fitAddon;
-          if (activeRef.current) {
+          if (activeRef.current && focusedRef.current) {
             term.focus();
           }
 
@@ -410,10 +414,16 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     settings.ansiCyan
   ]);
 
+  // Focus on active/focused state changes
+  useEffect(() => {
+    if (active && focused && terminalRef.current && ptyIdRef.current) {
+      terminalRef.current.focus();
+    }
+  }, [active, focused]);
+
   // Re-fit on active state toggle
   useEffect(() => {
     if (active && terminalRef.current && ptyIdRef.current) {
-      terminalRef.current.focus();
       setTimeout(() => {
         const dims = safeFit();
         if (dims && ptyIdRef.current) {

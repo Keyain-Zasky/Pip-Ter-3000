@@ -1139,7 +1139,8 @@ export default function App() {
                     >
                       <TerminalTab
                         id={node.id}
-                        active={isTabActive && activePaneId === node.id}
+                        active={isTabActive}
+                        focused={isPaneActive}
                         sessionConfig={{ shell: node.shell || '/bin/bash', args: node.args || [], env: node.env, cwd: node.cwd }}
                         settings={{
                           theme: settings.theme,
