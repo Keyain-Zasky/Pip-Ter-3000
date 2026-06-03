@@ -229,6 +229,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           term.open(containerRef.current);
           terminalRef.current = term;
           fitAddonRef.current = fitAddon;
+          if (activeRef.current) {
+            term.focus();
+          }
 
           // Get proposed dimensions
           let initialCols = 80;
@@ -410,6 +413,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   // Re-fit on active state toggle
   useEffect(() => {
     if (active && terminalRef.current && ptyIdRef.current) {
+      terminalRef.current.focus();
       setTimeout(() => {
         const dims = safeFit();
         if (dims && ptyIdRef.current) {

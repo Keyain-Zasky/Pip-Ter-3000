@@ -787,103 +787,42 @@ export default function App() {
   const handleMaximize = () => (window as any).api.window.maximize();
   const handleClose = () => (window as any).api.window.close();
 
-  const renderPaneNode = (node: PaneNode, tab: Tab, isTabActive: boolean): React.ReactNode => {
+  interface PaneLayout {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    node: PaneNode;
+  }
+
+  const computeLayout = (
+    node: PaneNode,
+    x = 0,
+    y = 0,
+    width = 100,
+    height = 100
+  ): PaneLayout[] => {
     if (node.type === 'leaf') {
-      const isPaneActive = activePaneId === node.id;
-      return (
-        <div 
-          key={node.id} 
-          style={{ 
-            flex: 1, 
-            height: '100%', 
-            width: '100%', 
-            position: 'relative',
-            border: isPaneActive ? '1px solid var(--border-color)' : '1px solid transparent',
-            borderRadius: '4px',
-            boxSizing: 'border-box'
-          }}
-          onClickCapture={() => setActivePaneId(node.id)}
-          onFocusCapture={() => setActivePaneId(node.id)}
-        >
-          <TerminalTab
-            id={node.id}
-            active={isTabActive}
-            sessionConfig={{ shell: node.shell || '/bin/bash', args: node.args || [], env: node.env, cwd: node.cwd }}
-            settings={{
-              theme: settings.theme,
-              fontFamily: settings.fontFamily,
-              fontSize: settings.fontSize,
-              glowIntensity: settings.glowIntensity,
-              foreground: settings.foreground,
-              background: settings.background,
-              cursor: settings.cursor,
-              ansiRed: settings.ansiRed,
-              ansiGreen: settings.ansiGreen,
-              ansiYellow: settings.ansiYellow,
-              ansiCyan: settings.ansiCyan,
-              hotkeys: settings.hotkeys
-            }}
-            onClose={() => closePane(tab.id, node.id)}
-          />
-          {countLeaves(tab.rootPane) > 1 && (
-            <button
-              onClick={() => closePane(tab.id, node.id)}
-              style={{
-                position: 'absolute',
-                top: '6px',
-                right: '6px',
-                zIndex: 100,
-                background: 'rgba(0, 0, 0, 0.7)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--fg-color)',
-                borderRadius: '4px',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontFamily: 'VT323, monospace',
-                padding: 0,
-                boxShadow: '0 0 8px rgba(0, 0, 0, 0.8)',
-                textShadow: '0 0 2px var(--fg-color)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--fg-color)';
-                e.currentTarget.style.color = '#000000';
-                e.currentTarget.style.boxShadow = '0 0 12px var(--fg-color)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                e.currentTarget.style.color = 'var(--fg-color)';
-                e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 0, 0, 0.8)';
-              }}
-              title="Close split pane"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      );
-    } else {
-      return (
-        <div 
-          key={node.id}
-          style={{ 
-            display: 'flex', 
-            flexDirection: node.splitDirection === 'horizontal' ? 'column' : 'row', 
-            width: '100%', 
-            height: '100%', 
-            gap: '8px',
-            flex: 1
-          }}
-        >
-          {node.children?.map(child => renderPaneNode(child, tab, isTabActive))}
-        </div>
-      );
+      return [{ id: node.id, x, y, width, height, node }];
     }
+    if (node.children && node.children.length > 0) {
+      const layouts: PaneLayout[] = [];
+      const len = node.children.length;
+      if (node.splitDirection === 'horizontal') {
+        const childHeight = height / len;
+        node.children.forEach((child, idx) => {
+          layouts.push(...computeLayout(child, x, y + idx * childHeight, width, childHeight));
+        });
+      } else {
+        const childWidth = width / len;
+        node.children.forEach((child, idx) => {
+          layouts.push(...computeLayout(child, x + idx * childWidth, y, childWidth, height));
+        });
+      }
+      return layouts;
+    }
+    return [];
   };
 
   // Determine media element properties
@@ -1166,17 +1105,104 @@ export default function App() {
           {/* Render terminals tabs and their split panes */}
           {tabs.map(t => {
             const isTabActive = t.id === activeTabId;
+            const layouts = computeLayout(t.rootPane);
+            const totalLeaves = layouts.length;
             return (
               <div 
                 key={t.id}
                 style={{
-                  display: isTabActive ? 'flex' : 'none',
+                  display: isTabActive ? 'block' : 'none',
                   width: '100%',
                   height: '100%',
-                  flexDirection: 'column'
+                  position: 'relative'
                 }}
               >
-                {renderPaneNode(t.rootPane, t, isTabActive)}
+                {layouts.map(layout => {
+                  const node = layout.node;
+                  const isPaneActive = activePaneId === node.id;
+                  return (
+                    <div 
+                      key={node.id} 
+                      style={{ 
+                        position: 'absolute',
+                        left: `calc(${layout.x}% + ${layout.x === 0 ? '0px' : '4px'})`,
+                        top: `calc(${layout.y}% + ${layout.y === 0 ? '0px' : '4px'})`,
+                        width: `calc(${layout.width}% - ${layout.x === 0 ? (layout.width === 100 ? '0px' : '4px') : (layout.x + layout.width === 100 ? '4px' : '8px')})`,
+                        height: `calc(${layout.height}% - ${layout.y === 0 ? (layout.height === 100 ? '0px' : '4px') : (layout.y + layout.height === 100 ? '4px' : '8px')})`,
+                        border: isPaneActive ? '1px solid var(--border-color)' : '1px solid transparent',
+                        borderRadius: '4px',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden'
+                      }}
+                      onClickCapture={() => setActivePaneId(node.id)}
+                      onFocusCapture={() => setActivePaneId(node.id)}
+                    >
+                      <TerminalTab
+                        id={node.id}
+                        active={isTabActive && activePaneId === node.id}
+                        sessionConfig={{ shell: node.shell || '/bin/bash', args: node.args || [], env: node.env, cwd: node.cwd }}
+                        settings={{
+                          theme: settings.theme,
+                          fontFamily: settings.fontFamily,
+                          fontSize: settings.fontSize,
+                          glowIntensity: settings.glowIntensity,
+                          foreground: settings.foreground,
+                          background: settings.background,
+                          cursor: settings.cursor,
+                          ansiRed: settings.ansiRed,
+                          ansiGreen: settings.ansiGreen,
+                          ansiYellow: settings.ansiYellow,
+                          ansiCyan: settings.ansiCyan,
+                          hotkeys: settings.hotkeys
+                        }}
+                        onClose={() => closePane(t.id, node.id)}
+                      />
+                      {totalLeaves > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closePane(t.id, node.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '6px',
+                            right: '6px',
+                            zIndex: 100,
+                            background: 'rgba(0, 0, 0, 0.7)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--fg-color)',
+                            borderRadius: '4px',
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontFamily: 'VT323, monospace',
+                            padding: 0,
+                            boxShadow: '0 0 8px rgba(0, 0, 0, 0.8)',
+                            textShadow: '0 0 2px var(--fg-color)',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--fg-color)';
+                            e.currentTarget.style.color = '#000000';
+                            e.currentTarget.style.boxShadow = '0 0 12px var(--fg-color)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                            e.currentTarget.style.color = 'var(--fg-color)';
+                            e.currentTarget.style.boxShadow = '0 0 8px rgba(0, 0, 0, 0.8)';
+                          }}
+                          title="Close split pane"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
